@@ -1,6 +1,3 @@
-from service import service
-
-
 class Matrix:
     matrix: list
 
@@ -33,6 +30,10 @@ class Matrix:
             print(i, end="")
         print()
 
+    @staticmethod
+    def new(image_width, image_height):
+        return [[0 for i in range(image_width)] for i in range(image_height)]
+
     def print(self):
         for row in self.matrix:
             Matrix.print_list(Matrix.format_list(row))
@@ -45,6 +46,12 @@ class Matrix:
 
     def same_size(self, other):
         return self.w() == other.w() and self.h() == other.h()
+
+    def min(self):
+        return min([min(x) for x in self.matrix])
+
+    def max(self):
+        return max([max(x) for x in self.matrix])
 
     def dot(self, other):
         sum = 0
@@ -82,11 +89,8 @@ class Matrix:
         print("{:>8s}".format("T[q]"), end="")
         Matrix.print_list(Matrix.format_list(lut))
 
-    def new(self):
-        return service.new(self.w(),self.h())
-
     def get(self, x, y, border="extend"):
-        if type(border) is str:
+        if border in ["extend", "extended"]:
             if x < 0:
                 x = 0
             if y < 0:
@@ -100,7 +104,10 @@ class Matrix:
                     try:
                         return self.matrix[y][x - 1]
                     except:
-                        return self.matrix[y - 1][x - 1]
+                        try:
+                            return self.matrix[y - 1][x - 1]
+                        except:
+                            return self.get(x - 1, y - 1)
         elif type(border) is int or float:
             try:
                 if x < 0 or y < 0:
@@ -111,5 +118,26 @@ class Matrix:
         else:
             raise TypeError("Invalid border value")
 
+    @staticmethod
+    def rel(pix, medium=0):
+        if pix > medium:
+            return 1
+        return 0
 
+    def fit(self, other, medium=0):
+        # self.matrix and param matrix are considered to be the same size
 
+        for row in range(self.h()):
+            for col in range(self.w()):
+                if not ((other.get(col, row) == 1 and Matrix.rel(self.get(col, row),medium) == 1) or other.get(col,row) == 0):
+                    return False
+        return True
+
+    def hit(self, other, medium=0):
+        # self.matrix and param matrix are considered to be the same size
+        hit_count = 0
+        for row in range(self.h()):
+            for col in range(self.w()):
+                if other.get(col, row) == 1 and Matrix.rel(self.get(col, row),medium) == 1:
+                    hit_count += 1
+        return hit_count >= 1

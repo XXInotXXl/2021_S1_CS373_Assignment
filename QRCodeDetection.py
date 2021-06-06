@@ -81,21 +81,44 @@ def main():
     # each pixel array contains 8 bit integer values between 0 and 255 encoding the color values
     (image_width, image_height, px_array_r, px_array_g, px_array_b) = readRGBImageToSeparatePixelArrays(filename)
 
-    img = service.RGB_to_Grey(px_array_r, px_array_g, px_array_b, image_width, image_height)
-    img = service.scale_and_quantize(img, image_width, image_height)
-    img=service.computer_edges(img, image_width, image_height)
+    # Step 1
+    origin_img = service.RGB_to_Grey(px_array_r, px_array_g, px_array_b, image_width, image_height)
+    img = service.scale_and_quantize(origin_img, image_width, image_height)
 
-    img = service.scale_and_quantize(img, image_width, image_height)
+    # Step 2,3,4
+    img = service.computer_edges(img, image_width, image_height)
 
-    for i in range(5):
+    # Step 5
+    for i in range(8):
         img = service.mean_filter_3x3(img, image_width, image_height)
     img = service.scale_and_quantize(img, image_width, image_height)
 
-    # writeGreyscalePixelArraytoPNG("det.png", img, image_width, image_height)
+    # Step 6
+    # img = service.adaptive_thresholding(img, image_width, image_height)
+    img = service.thresholding(img, image_width, image_height, 70)
 
-    # # pyplot.imshow(
-    # #     prepareRGBImageForImshowFromIndividualArrays(px_array_r, px_array_g, px_array_b, image_width, image_height))
-    pyplot.imshow(img, cmap='gray', vmin=0, vmax=255)
+    # Step 7
+    img = service.Dilation(service.Erosion(img, image_width, image_height), image_width, image_height)
+    img = service.scale_and_quantize(img, image_width, image_height)
+
+    # Step 8
+    x0, y0, x1, y1 = service.find_largest_connected_component(img, image_width, image_height)
+    print(x0, y0, x1, y1)
+
+    # Step 9
+    # RGB
+    px_array_r = service.border(px_array_r, image_width, image_height, x0, y0, x1, y1, 20, 0)
+    px_array_g = service.border(px_array_g, image_width, image_height, x0, y0, x1, y1, 20, 255)
+    px_array_b = service.border(px_array_b, image_width, image_height, x0, y0, x1, y1, 20, 0)
+    # Gray
+    img = service.border(origin_img, image_width, image_height, x0, y0, x1, y1, 20, 0)
+
+    # Write grayscale image to det.png
+    writeGreyscalePixelArraytoPNG("det.png", img, image_width, image_height)
+
+    # Show RGB Image
+    pyplot.imshow(
+        prepareRGBImageForImshowFromIndividualArrays(px_array_r, px_array_g, px_array_b, image_width, image_height))
     # get access to the current pyplot figure
     axes = pyplot.gca()
     # create a 70x50 rectangle that starts at location 10,30, with a line width of 3
